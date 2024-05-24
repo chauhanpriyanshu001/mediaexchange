@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "37298714691",
+    "project_id": "khudkibook-gtu",
+    "storage_bucket": "khudkibook-gtu.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37298714691:android:c2546658498b93fa2ffcf6",
+        "android_client_info": {
+          "package_name": "com.example.mediaexchange"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "37298714691-24da4ft551re8fbjgn56c8e0ubrkbs0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4gqHlFbtBdlLZ5TIfFDGWTQaEV6TYGDI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "37298714691-24da4ft551re8fbjgn56c8e0ubrkbs0i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

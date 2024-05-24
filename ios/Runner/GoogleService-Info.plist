@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBH9Qpi1CikC-RGh1ECdZc6FjNUflzlNDA</string>
+	<key>GCM_SENDER_ID</key>
+	<string>37298714691</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.mediaexchange</string>
+	<key>PROJECT_ID</key>
+	<string>khudkibook-gtu</string>
+	<key>STORAGE_BUCKET</key>
+	<string>khudkibook-gtu.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:37298714691:ios:12eb17cd1d790f7b2ffcf6</string>
+</dict>
+</plist>
