@@ -3,10 +3,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:mediaexchange/services/SharedPreferencesHandler.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
+// ----- Google OAuth Credientials Start ----- //
 const String apiKey = "";
 const String clientId =
     "37298714691-24da4ft551re8fbjgn56c8e0ubrkbs0i.apps.googleusercontent.com";
@@ -15,6 +18,18 @@ const String apiBaseURL = "https://accounts.google.com/o/oauth2/v2/";
 const String apiScope = "https://www.googleapis.com/auth/photoslibrary";
 const String apiRedirectURL =
     "https://khudkibook-gtu-496e0.firebaseapp.com/__/auth/handler";
+// ----- Google OAuth Credientials End ----- //
+
+// ----- Facebook/Instagram  Credientials Start ----- //
+String redirectUri = "https://www.google.com/";
+String instaclientID = "796842212417177";
+
+String insta_client_secret = "7427be29a31890fe2f475a36b1147037";
+String scope = "instagram_basic,instagram_content_publish";
+String responseType = "code";
+String access_token = "";
+String user_id = "25641738518806404";
+// ----- Facebook Credientials End ----- //
 
 class ConnectionProvider {
   Dio? httpClient;
@@ -25,16 +40,28 @@ class ConnectionProvider {
   /// redirect url.
   /// Catch this response through a local server and save the code.
   /// Set the response_type parameter to "code".
+
+  // Google Photo OAuth
   Future<Uri?> authorize() async {
     Uri url = Uri.parse(
         "https://accounts.google.com/o/oauth2/v2/auth?scope=$apiScope&response_type=code&redirect_uri=$apiRedirectURL&client_id=$clientId");
     if (await canLaunchUrl(url))
       await launchUrl(url);
     else
-      // can't launch url, there is some error
       throw "Could not launch $url";
-    // print(res.body);
-    // print(res.statusCode);
+
+    return url;
+  }
+
+  // Instagram  OAuth
+  Future<Uri?> instaAuthorize() async {
+    Uri url = Uri.parse(
+        "https://www.facebook.com/v13.0/dialog/oauth?client_id=$instaclientID&response_type=code&redirect_uri=$redirectUri&scope=instagram_basic,instagram_content_publish,pages_read_engagement,pages_read_engagement");
+    print(url);
+    if (await canLaunchUrl(url))
+      await launchUrl(url);
+    else
+      throw "Could not launch $url";
 
     return url;
   }
@@ -43,6 +70,8 @@ class ConnectionProvider {
   /// This makes the request to the authorization server to exchange
   /// the grant code for access_token and refresh_token.
   /// Save both these tokens for subsequent requests.
+
+  /// for Google Photos auth code
   Future<dynamic> exchangeToken({code}) async {
     var response = await http.post(
       Uri.parse(
@@ -56,23 +85,30 @@ class ConnectionProvider {
     return jsonDecode(response.body);
   }
 
-  // Get Google Drive Files
-  Future<dynamic> getFilesList() async {
-    String auth_code = await SharedPreferencesHandler().getString("auth_code");
-    var response = await http.get(Uri.parse(
-        "https://www.googleapis.com/drive/v2/files?access_token=$auth_code"));
+// For Instagram auth code
+  Future<dynamic> exchangeTokenInsta({code}) async {
+    var response = await http.post(
+      Uri.parse(
+          "https://graph.facebook.com/v13.0/oauth/access_token?client_id=$instaclientID&redirect_uri=$redirectUri&client_secret=$insta_client_secret&code=$code"),
+    );
+
     print(response.body);
     print(response.statusCode);
+    print(response.request);
+
     return jsonDecode(response.body);
   }
 
 // Get Google Photos Files
-  Future<dynamic> listPhotofile() async {
+  Future<dynamic> listPhotofile({String? nextPageToken}) async {
     String auth_code = await SharedPreferencesHandler().getString("auth_code");
     print(auth_code);
     var tokenResult = await http.get(
-      Uri.parse(
-          'https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=50'),
+      nextPageToken != null
+          ? Uri.parse(
+              'https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=10&pageToken=$nextPageToken')
+          : Uri.parse(
+              'https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=10'),
       headers: {
         "Authorization": "Bearer $auth_code",
         'Accept': 'application/json,'
@@ -80,6 +116,87 @@ class ConnectionProvider {
     );
     print(tokenResult.body);
     print(tokenResult.reasonPhrase);
+
+    return jsonDecode(tokenResult.body);
+  }
+
+// Filters in Google Photos
+  Future<dynamic> photoFilter({String? type}) async {
+    String auth_code = await SharedPreferencesHandler().getString("auth_code");
+    Map data = {};
+    if (type == 'fav') {
+      data = {
+        "pageSize": "100",
+        "filters": {
+          "featureFilter": {
+            "includedFeatures": ["FAVORITES"]
+          }
+        }
+      };
+    } else if (type == 'photo') {
+      data = {
+        "pageSize": "100",
+        "filters": {
+          "mediaTypeFilter": {
+            "mediaTypes": ["PHOTO"]
+          }
+        }
+      };
+    } else if (type == 'video') {
+      data = {
+        "pageSize": "100",
+        "filters": {
+          "mediaTypeFilter": {
+            "mediaTypes": ["VIDEO"]
+          }
+        }
+      };
+    } else if (type == 'old') {
+      data = {
+        "pageSize": "100",
+        "filters": {
+          "dateFilter": {
+            "dates": [
+              {"year": 2020},
+              {"year": 2021},
+              {"year": 2022},
+              {"year": 2023},
+              {"year": 2024},
+            ]
+          }
+        },
+        "orderBy": "MediaMetadata.creation_time"
+      };
+    } else {
+      data = {
+        "pageSize": "100",
+        "filters": {
+          "dateFilter": {
+            "dates": [
+              {"year": 2020},
+              {"year": 2021},
+              {"year": 2022},
+              {"year": 2023},
+              {"year": 2024},
+            ]
+          }
+        },
+        "orderBy": "MediaMetadata.creation_time desc"
+      };
+    }
+
+    var tokenResult = await http.post(
+      Uri.parse('https://photoslibrary.googleapis.com/v1/mediaItems:search'),
+      body: jsonEncode(data),
+      headers: {
+        "Authorization": "Bearer $auth_code",
+        'Accept': 'application/json,'
+      },
+    );
+
+    if (tokenResult.statusCode != 200) {
+      Fluttertoast.showToast(msg: "Error");
+    }
 
     return jsonDecode(tokenResult.body);
   }
@@ -176,6 +293,7 @@ class ConnectionProvider {
   /// Delete the object identified by [metadata] stored in the connector.
   /// Returns true if successful.
   Future<bool> delete({metadata, params}) async {
+    // Delete not avilable for instgrama and google photos
     throw UnimplementedError();
   }
 
@@ -184,22 +302,6 @@ class ConnectionProvider {
   /// [params] can contain other useful information needed to complete
   /// this operation.
   /// Returns true if successful.
-  Future upload({filePath, metadata, params, contentLength}) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
-    File file = File(result!.files.single.path!);
-
-    var request = await http.post(
-        Uri.parse(
-            "https://www.googleapis.com/upload/drive/v3/files?uploadType=media"),
-        body: {
-          "Content-Type": 'application/octet-stream',
-          "Content-Length": file.openRead()
-        });
-
-    print(request.body);
-    print(request.statusCode);
-    throw UnimplementedError();
-  }
 
   /// Download the object identified by [metadata] from the connector
   /// to the local [downloadDir].

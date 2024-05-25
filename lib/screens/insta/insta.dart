@@ -2,16 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+
 import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:http/http.dart' as http;
-import 'package:mediaexchange/screens/auth.dart';
-import 'package:mediaexchange/screens/instgram/instaUpload.dart';
+import 'package:mediaexchange/screens/insta/instaUpload.dart';
+import 'package:mediaexchange/screens/signin.dart';
 import 'package:mediaexchange/services/SharedPreferencesHandler.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -25,7 +25,7 @@ class Insta extends StatefulWidget {
 }
 
 class _InstaState extends State<Insta> {
-  FirebaseAuth auth = FirebaseAuth.instance;
+  // FirebaseAuth auth = FirebaseAuth.instance;
 
   Map data = {};
   Map mediaid = {};
@@ -39,118 +39,15 @@ class _InstaState extends State<Insta> {
     instaAccessCode();
   }
 
-  String redirectUri = "https://socialsizzle.herokuapp.com/auth/";
-  String clientID = "1096625224730439";
-  String client_secret = "a26e7cf75d16c6f1f93fa9603cbc4eb9";
-  String scope = "user_profile,user_media";
-  String responseType = "code";
   String access_token = "";
-  String user_id = "25641738518806404";
   bool loading = false;
   String instaId = '';
-  instaAuth() async {
-    final res = await http.get(Uri.parse(
-        "https://api.instagram.com/oauth/authorize?client_id=${clientID}&redirect_uri=${redirectUri}&scope=${scope}&response_type=${responseType}"));
-    // https://socialsizzle.herokuapp.com/auth/?code=AQDIgMlBSxY8PFjsEa5JWf95a8i1SBLzIp94NbZQnDRANFyO7C3CDZEoNH2sYU-Id39ArDvTIgWvXWzoeWckqBeJWgKe_gQUdqnUyoD6_0F4jSzr10ag0sGlppeH6qaXsbyK2RiNIhclCdFH97oiPpxl4SylpeSX74jyM-i869rqUiFDpsHodzlI8lUNmZC0DZsQyJ37p38HSeSxT_yGg6Q9DnwvhVm3YUVocIH48ECQrg#_
-    print(res.body);
-    print(res.request);
-    print(res.reasonPhrase);
-    print(res.statusCode);
-
-    print(res.body.contains(redirectUri));
-
-    setState(() {});
-  }
-
-  Future _signInWithFacebook() async {
-    // 1. Trigger Facebook Login
-    final LoginResult loginResult =
-        await FacebookAuth.instance.login(permissions: [
-      'instagram_basic',
-      "instagram_content_publish",
-      "pages_read_engagement",
-      "instagram_content_publish",
-      "pages_read_engagement",
-    ]);
-
-    // 2. Handle Login Result
-    if (loginResult.status == LoginStatus.success) {
-      // 3. Get Facebook Access Token
-      final accessToken = loginResult.accessToken;
-      print(accessToken!.token);
-      // 4. Use Access Token for Firebase Authentication
-      final credential = FacebookAuthProvider.credential(accessToken!.token);
-      code = accessToken.token;
-      setState(() {});
-
-      try {
-        // Sign in with Firebase
-        await auth.signInWithCredential(credential);
-        print("Firebase Login successful with Facebook");
-        // Navigate to the home screen or wherever you want
-        getUserMedia();
-        print(auth.currentUser);
-      } catch (e) {
-        print("Error signing in with Facebook: ${e.toString()}");
-      }
-    } else {
-      print("Facebook Login failed");
-
-      // Handle failed login
-    }
-  }
 
   instaAccessCode() async {
-    // final res = await http
-    //     .post(Uri.parse("https://api.instagram.com/oauth/access_token"), body: {
-    //   "client_id": clientID,
-    //   "client_secret": client_secret,
-    //   "code": code,
-    //   "grant_type": "authorization_code",
-    //   "redirect_uri": redirectUri
-    // });
-    // print(res.body);
-    // print(res.request);
-    // print(res.reasonPhrase);
-    // print(res.statusCode);
-    await _signInWithFacebook();
-  }
-
-  getUserInfo() async {
-    loading = true;
-    setState(() {});
-    final res = await http.get(
-      Uri.parse(
-          "https://graph.instagram.com/me?fields=id,username&access_token=$access_token"),
-    );
-    print(res.body);
-    print(res.request);
-    print(res.reasonPhrase);
-    print(res.statusCode);
-    data = {};
-    data = jsonDecode(res.body);
-    print(data);
-    loading = false;
-    getuserMediaId();
-    setState(() {});
-  }
-
-  getuserMediaId() async {
-    loading = true;
-    setState(() {});
-    final res = await http.get(
-      Uri.parse(
-          "https://graph.instagram.com/${data['id']}/media?access_token=$access_token"),
-    );
-    print(res.body);
-    print(res.request);
-    print(res.reasonPhrase);
-    print(res.statusCode);
-
-    mediaid = jsonDecode(res.body);
-
+    access_token =
+        await SharedPreferencesHandler().getString("insta_auth_code");
+    code = await SharedPreferencesHandler().getString("insta_auth_code");
     getUserMedia();
-    setState(() {});
   }
 
   getUserMedia() async {
@@ -160,12 +57,16 @@ class _InstaState extends State<Insta> {
     if (instaId == "") {
       var request1 = await http.get(Uri.parse(
           "https://graph.facebook.com/v19.0/me/accounts?fields=connected_instagram_account&access_token=$code"));
-      print(request1.body);
-      print(request1.statusCode);
-      Map data = jsonDecode(request1.body);
-      print(data['data'][1]['connected_instagram_account']['id']);
-      instaId = data['data'][1]['connected_instagram_account']['id'].toString();
-      setState(() {});
+
+      if (request1.statusCode == 200) {
+        Map data = jsonDecode(request1.body);
+        print(data['data'][1]['connected_instagram_account']['id']);
+        instaId =
+            data['data'][1]['connected_instagram_account']['id'].toString();
+        setState(() {});
+      } else {
+        Fluttertoast.showToast(msg: "Error Ocurred");
+      }
     }
 
     // Request for Insta Information
@@ -192,9 +93,13 @@ class _InstaState extends State<Insta> {
   Future<void> downloadImage(String imageUrl) async {
     // Send a GET request to the URL
     var response = await http.get(Uri.parse(imageUrl));
-
+    Directory? tempDir;
     // Get the app's temporary directory
-    Directory? tempDir = await getDownloadsDirectory();
+    if (Platform.isIOS) {
+      tempDir = await getApplicationDocumentsDirectory();
+    } else {
+      tempDir = await getDownloadsDirectory();
+    }
 
     // Create a file in the temporary directory
     File file = File('${tempDir?.path}/image.jpg');
@@ -207,8 +112,6 @@ class _InstaState extends State<Insta> {
   }
 
   getUploadFiles() async {
-    loading = true;
-    setState(() {});
     List fileUrls = [];
     var database = FirebaseStorage.instance;
     await Permission.photos;
@@ -216,7 +119,8 @@ class _InstaState extends State<Insta> {
         await FilePicker.platform.pickFiles(allowMultiple: true);
     if (pickfile != null) {
       // Cheking if the picked file is singe or multiple
-
+      loading = true;
+      setState(() {});
       if (pickfile.isSinglePick) {
         // Single file
         // Getting file path
@@ -259,25 +163,25 @@ class _InstaState extends State<Insta> {
               .putFile(file);
           print(req.state);
           String newUrl = await req.ref.getDownloadURL();
-// adding in list
+          // adding in list
 
           fileUrls.add(newUrl);
-          loading = false;
-          setState(() {});
-          // Navigate
 
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => UploadPost(
-                        instaId: instaId,
-                        fileUrl: fileUrls,
-                        token: code,
-                      ))).then((value) {
-            getUserMedia();
-            setState(() {});
-          });
+          // Navigate
         }
+        loading = false;
+        setState(() {});
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => UploadPost(
+                      instaId: instaId,
+                      fileUrl: fileUrls,
+                      token: code,
+                    ))).then((value) {
+          getUserMedia();
+          setState(() {});
+        });
       }
     }
     loading = false;
@@ -294,7 +198,9 @@ class _InstaState extends State<Insta> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: Text("Instagram Service"),
+          centerTitle: false,
           actions: [
             ElevatedButton.icon(
                 onPressed: () async {
@@ -332,28 +238,7 @@ class _InstaState extends State<Insta> {
                                   onPressed: () async {
                                     loading = true;
                                     getUploadFiles();
-                                    // setState(() {});
-                                    // Request for getting post id -not posted yet
 
-                                    // var request1 = await http.post(Uri.parse(
-                                    //     "https://graph.facebook.com/v19.0/$instaId/media?image_url=https://khudkibook.web.app/img/bg.png&caption=uploadusingapi&access_token=$code"));
-                                    // print(request1.body);
-                                    // print(request1.statusCode);
-                                    // Map id = jsonDecode(request1.body);
-                                    // print(id);
-                                    // // Posting now using post id
-                                    // var request2 = await http.post(Uri.parse(
-                                    //     "https://graph.facebook.com/v19.0/$instaId/media_publish?creation_id=${id['id']}&access_token=$code"));
-                                    // print(request2.body);
-                                    // print(request2.statusCode);
-                                    // if (request2.statusCode.toString() ==
-                                    //     "200") {
-                                    //   Fluttertoast.showToast(
-                                    //       msg: "Post Uploaded");
-                                    // } else {
-                                    //   Fluttertoast.showToast(
-                                    //       msg: "Post Not Uploaded");
-                                    // }
                                     loading = false;
                                     // getUserMedia();
                                     // setState(() {});
