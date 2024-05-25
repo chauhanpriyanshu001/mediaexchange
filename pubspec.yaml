@@ -33,7 +33,7 @@ dependencies:
   file_picker: ^8.0.3
 
   firebase_core: ^2.31.1
-  firebase_storage: ^11.7.6 #Used for storing image and geeting url for iknstgram post
+  firebase_storage: ^11.7.6 #Used for storing image and geeting url for instagram post
   flutter:
     sdk: flutter
 
